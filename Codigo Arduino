@@ -1,0 +1,110 @@
+const int ledPin1 = 7;
+const int ledPin2 = 8;
+const int motorEnablePin1 = 9;
+const int motorInput1Pin1 = 10;
+const int motorInput2Pin1 = 11;
+const int motorEnablePin2 = 5;
+const int motorInput1Pin2 = 13;
+const int motorInput2Pin2 = 12;
+const int sensorPin = 6;
+
+bool operationsEnabled = true;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(ledPin1, OUTPUT);
+  pinMode(ledPin2, OUTPUT);
+  pinMode(motorEnablePin1, OUTPUT);
+  pinMode(motorInput1Pin1, OUTPUT);
+  pinMode(motorInput2Pin1, OUTPUT);
+  pinMode(motorEnablePin2, OUTPUT);
+  pinMode(motorInput1Pin2, OUTPUT);
+  pinMode(motorInput2Pin2, OUTPUT);
+  pinMode(sensorPin, INPUT);
+}
+
+void loop() {
+  if (digitalRead(sensorPin) == HIGH) {
+    detenerOperaciones();
+  } else if (!operationsEnabled) {
+    reanudarOperaciones();
+  } else {
+    if (Serial.available()) {
+      String command = Serial.readStringUntil('\n');
+      handleCommand(command);
+    }
+  }
+}
+
+void detenerOperaciones() {
+  operationsEnabled = false;
+  digitalWrite(ledPin1, LOW);
+  digitalWrite(ledPin2, LOW);
+  digitalWrite(motorEnablePin1, LOW);
+  digitalWrite(motorInput1Pin1, LOW);
+  digitalWrite(motorInput2Pin1, LOW);
+  digitalWrite(motorEnablePin2, LOW);
+  digitalWrite(motorInput1Pin2, LOW);
+  digitalWrite(motorInput2Pin2, LOW);
+}
+
+void reanudarOperaciones() {
+  operationsEnabled = true;
+}
+
+void handleCommand(String command) {
+  if (!operationsEnabled) return;
+  command.trim();
+  if (command.startsWith("LED")) {
+    int pin, duration;
+    if (parseCommand(command, pin, duration)) {
+      if (pin == ledPin1 || pin == ledPin2) {
+        digitalWrite(pin, HIGH);
+        if (pin == ledPin1) {
+          digitalWrite(motorEnablePin1, HIGH);
+          digitalWrite(motorInput1Pin1, HIGH);
+          digitalWrite(motorInput2Pin1, LOW);
+        } else {
+          digitalWrite(motorEnablePin2, HIGH);
+          digitalWrite(motorInput1Pin2, HIGH);
+          digitalWrite(motorInput2Pin2, LOW);
+        }
+        unsigned long startTime = millis();
+        while (millis() - startTime < duration * 1000) {
+          if (digitalRead(sensorPin) == HIGH) {
+            detenerOperaciones();
+            return;
+          }
+          delay(10);
+        }
+        digitalWrite(pin, LOW);
+        if (pin == ledPin1) {
+          digitalWrite(motorEnablePin1, LOW);
+          digitalWrite(motorInput1Pin1, LOW);
+          digitalWrite(motorInput2Pin1, LOW);
+        } else {
+          digitalWrite(motorEnablePin2, LOW);
+          digitalWrite(motorInput1Pin2, LOW);
+          digitalWrite(motorInput2Pin2, LOW);
+        }
+      }
+    }
+  }
+}
+
+bool parseCommand(String command, int &pin, int &duration) {
+  int firstCommaIndex = command.indexOf(',');
+  int secondCommaIndex = command.indexOf(',', firstCommaIndex + 1);
+
+  if (firstCommaIndex == -1 || secondCommaIndex == -1) {
+    return false;
+  }
+
+  String pinString = command.substring(firstCommaIndex + 1, secondCommaIndex);
+  String durationString = command.substring(secondCommaIndex + 1);
+
+  pin = pinString.toInt();
+  duration = durationString.toInt();
+
+  return (pin > 0 && duration > 0);
+}
