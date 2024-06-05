@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace Gasolinera
 {
-    public static class Estadisticas
+    public static class Estadisticas 
     {
         public static Dictionary<string, object> GenerarCierreDiario(List<TransaccionAbastecimiento> transacciones)
         {
