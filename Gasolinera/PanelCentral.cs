@@ -116,8 +116,6 @@ public class PanelCentral
         }
         catch (Exception ex)
         {
-            // Manejo de errores: aquí podrías registrar el error en un log
-            // Console.WriteLine("Error al guardar las transacciones: " + ex.Message);
         }
     }
 
@@ -151,8 +149,7 @@ public class PanelCentral
         }
         catch (Exception ex)
         {
-            // Manejo de errores: aquí podrías registrar el error en un log
-            // Console.WriteLine("Error al cargar las transacciones: " + ex.Message);
+
         }
     }
 }
