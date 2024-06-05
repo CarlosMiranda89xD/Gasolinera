@@ -253,8 +253,8 @@ namespace Gasolinera
                 {"Total Transacciones", transaccionesFiltradas.Count},
                 {"Total Litros Abastecidos", transaccionesFiltradas.Sum(t => t.Cantidad)},
                 {"Total Ingresos", transaccionesFiltradas.Sum(t => t.MontoPagado)},
-                {"Tota lPrepago", transaccionesFiltradas.Where(t => t.TipoAbastecimiento == "Prepago").Sum(t => t.MontoPagado)},
-                {"Total TanqueLleno", transaccionesFiltradas.Where(t => t.TipoAbastecimiento == "Tanque Lleno").Sum(t => t.MontoPagado)}
+                {"Total Prepago", transaccionesFiltradas.Where(t => t.TipoAbastecimiento == "Prepago").Sum(t => t.MontoPagado)},
+                {"Total Tanque Lleno", transaccionesFiltradas.Where(t => t.TipoAbastecimiento == "Tanque Lleno").Sum(t => t.MontoPagado)}
             };
 
             MostrarEstadisticas(estadisticasFiltradas);
