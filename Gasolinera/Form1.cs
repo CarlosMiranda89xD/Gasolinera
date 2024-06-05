@@ -64,6 +64,103 @@ namespace Gasolinera
             });
         }
 
+        private ValidacionResultado ValidarEntradas()
+        {
+            int idBomba = 0;
+            string tipoAbastecimiento = string.Empty;
+            string nombreCliente = string.Empty;
+            double montoPrepago = 0;
+
+            // Validar ID de bomba
+            if (!int.TryParse(txtIdBomba.Text, out idBomba) || idBomba <= 0 || !panelCentral.Bombas.Any(b => b.ID == idBomba))
+            {
+                MessageBox.Show("Por favor, introduce un ID de bomba válido.");
+                return new ValidacionResultado { EsValido = false };
+            }
+
+            // Validar tipo de abastecimiento
+            if (cmbTipoAbastecimiento.SelectedItem == null)
+            {
+                MessageBox.Show("Por favor, selecciona un tipo de abastecimiento.");
+                return new ValidacionResultado { EsValido = false };
+            }
+            tipoAbastecimiento = cmbTipoAbastecimiento.SelectedItem.ToString();
+
+            // Validar nombre del cliente
+            nombreCliente = txtNombreCliente.Text;
+            if (string.IsNullOrWhiteSpace(nombreCliente))
+            {
+                MessageBox.Show("Por favor, introduce un nombre de cliente.");
+                return new ValidacionResultado { EsValido = false };
+            }
+
+            // Validar monto de prepago si aplica
+            if (tipoAbastecimiento == "Prepago")
+            {
+                if (!double.TryParse(txtMontoPrepago.Text, out montoPrepago) || montoPrepago <= 0)
+                {
+                    MessageBox.Show("Por favor, introduce un monto de prepago válido.");
+                    return new ValidacionResultado { EsValido = false };
+                }
+            }
+
+            return new ValidacionResultado
+            {
+                EsValido = true,
+                IdBomba = idBomba,
+                TipoAbastecimiento = tipoAbastecimiento,
+                NombreCliente = nombreCliente,
+                MontoPrepago = montoPrepago
+            };
+        }
+
+        private void EnviarTipoAbastecimiento(string tipoAbastecimiento)
+        {
+            try
+            {
+                if (mySerialPort.IsOpen)
+                {
+                    if (tipoAbastecimiento == "Tanque Lleno")
+                    {
+                        mySerialPort.WriteLine("TANQUE_LLENO");
+                    }
+                    else
+                    {
+                        mySerialPort.WriteLine(tipoAbastecimiento);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al enviar el tipo de abastecimiento al Arduino: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void MostrarEstadisticas(Dictionary<string, object> estadisticas)
+        {
+            dataGridViewEstadisticas.Rows.Clear();
+            dataGridViewEstadisticas.Columns.Clear();
+
+            dataGridViewEstadisticas.Columns.Add("Key", "Estadística");
+            dataGridViewEstadisticas.Columns.Add("Value", "Valor");
+
+            foreach (var estadistica in estadisticas)
+            {
+                dataGridViewEstadisticas.Rows.Add(estadistica.Key, estadistica.Value);
+            }
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (mySerialPort != null && mySerialPort.IsOpen)
+            {
+                mySerialPort.Close();
+            }
+
+            // Guardar transacciones al cerrar la aplicación
+            panelCentral.GuardarTransacciones();
+        }
+
         private async void btnIniciarAbastecimiento_Click(object sender, EventArgs e)
         {
             // Asegurarse de que el puerto esté abierto antes de cualquier operación
@@ -123,9 +220,6 @@ namespace Gasolinera
             }
         }
 
-
-
-
         private async void btnTerminarAbastecimiento_Click(object sender, EventArgs e)
         {
             // Asegurarse de que el puerto esté abierto antes de cualquier operación
@@ -156,28 +250,14 @@ namespace Gasolinera
 
             var estadisticasFiltradas = new Dictionary<string, object>
             {
-                {"TotalTransacciones", transaccionesFiltradas.Count},
-                {"TotalLitrosAbastecidos", transaccionesFiltradas.Sum(t => t.Cantidad)},
-                {"TotalIngresos", transaccionesFiltradas.Sum(t => t.MontoPagado)},
-                {"TotalPrepago", transaccionesFiltradas.Where(t => t.TipoAbastecimiento == "Prepago").Sum(t => t.MontoPagado)},
-                {"TotalTanqueLleno", transaccionesFiltradas.Where(t => t.TipoAbastecimiento == "Tanque Lleno").Sum(t => t.MontoPagado)}
+                {"Total Transacciones", transaccionesFiltradas.Count},
+                {"Total Litros Abastecidos", transaccionesFiltradas.Sum(t => t.Cantidad)},
+                {"Total Ingresos", transaccionesFiltradas.Sum(t => t.MontoPagado)},
+                {"Tota lPrepago", transaccionesFiltradas.Where(t => t.TipoAbastecimiento == "Prepago").Sum(t => t.MontoPagado)},
+                {"Total TanqueLleno", transaccionesFiltradas.Where(t => t.TipoAbastecimiento == "Tanque Lleno").Sum(t => t.MontoPagado)}
             };
 
             MostrarEstadisticas(estadisticasFiltradas);
-        }
-
-        private void MostrarEstadisticas(Dictionary<string, object> estadisticas)
-        {
-            dataGridViewEstadisticas.Rows.Clear();
-            dataGridViewEstadisticas.Columns.Clear();
-
-            dataGridViewEstadisticas.Columns.Add("Key", "Estadística");
-            dataGridViewEstadisticas.Columns.Add("Value", "Valor");
-
-            foreach (var estadistica in estadisticas)
-            {
-                dataGridViewEstadisticas.Rows.Add(estadistica.Key, estadistica.Value);
-            }
         }
 
         private void btnResetearDatos_Click(object sender, EventArgs e)
@@ -216,93 +296,10 @@ namespace Gasolinera
             MessageBox.Show($"Bomba menos utilizada: {bombaMenosUtilizada}");
         }
 
-        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            if (mySerialPort != null && mySerialPort.IsOpen)
-            {
-                mySerialPort.Close();
-            }
-
-            // Guardar transacciones al cerrar la aplicación
-            panelCentral.GuardarTransacciones();
-        }
-
-        private ValidacionResultado ValidarEntradas()
-        {
-            int idBomba = 0;
-            string tipoAbastecimiento = string.Empty;
-            string nombreCliente = string.Empty;
-            double montoPrepago = 0;
-
-            // Validar ID de bomba
-            if (!int.TryParse(txtIdBomba.Text, out idBomba) || idBomba <= 0 || !panelCentral.Bombas.Any(b => b.ID == idBomba))
-            {
-                MessageBox.Show("Por favor, introduce un ID de bomba válido.");
-                return new ValidacionResultado { EsValido = false };
-            }
-
-            // Validar tipo de abastecimiento
-            if (cmbTipoAbastecimiento.SelectedItem == null)
-            {
-                MessageBox.Show("Por favor, selecciona un tipo de abastecimiento.");
-                return new ValidacionResultado { EsValido = false };
-            }
-            tipoAbastecimiento = cmbTipoAbastecimiento.SelectedItem.ToString();
-
-            // Validar nombre del cliente
-            nombreCliente = txtNombreCliente.Text;
-            if (string.IsNullOrWhiteSpace(nombreCliente))
-            {
-                MessageBox.Show("Por favor, introduce un nombre de cliente.");
-                return new ValidacionResultado { EsValido = false };
-            }
-
-            // Validar monto de prepago si aplica
-            if (tipoAbastecimiento == "Prepago")
-            {
-                if (!double.TryParse(txtMontoPrepago.Text, out montoPrepago) || montoPrepago <= 0)
-                {
-                    MessageBox.Show("Por favor, introduce un monto de prepago válido.");
-                    return new ValidacionResultado { EsValido = false };
-                }
-            }
-
-            return new ValidacionResultado
-            {
-                EsValido = true,
-                IdBomba = idBomba,
-                TipoAbastecimiento = tipoAbastecimiento,
-                NombreCliente = nombreCliente,
-                MontoPrepago = montoPrepago
-            };
-        }
-
         private void txtIdBomba_TextChanged(object sender, EventArgs e) { }
 
         private void txtMontoPrepago_TextChanged(object sender, EventArgs e) { }
 
         private void cmbTipoAbastecimiento_SelectedIndexChanged(object sender, EventArgs e) { }
-
-        private void EnviarTipoAbastecimiento(string tipoAbastecimiento)
-        {
-            try
-            {
-                if (mySerialPort.IsOpen)
-                {
-                    if (tipoAbastecimiento == "Tanque Lleno")
-                    {
-                        mySerialPort.WriteLine("TANQUE_LLENO");
-                    }
-                    else
-                    {
-                        mySerialPort.WriteLine(tipoAbastecimiento);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error al enviar el tipo de abastecimiento al Arduino: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
     }
 }
