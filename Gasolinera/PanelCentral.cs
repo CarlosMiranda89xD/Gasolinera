@@ -51,13 +51,13 @@ public class PanelCentral
     {
         return new Dictionary<string, object>
         {
-            {"TotalTransacciones", Transacciones.Count},
-            {"TotalLitrosAbastecidos", Transacciones.Sum(t => t.Cantidad)},
-            {"TotalIngresos", Transacciones.Sum(t => t.MontoPagado)},
-            {"TotalPrepago", Transacciones.Where(t => t.TipoAbastecimiento == "Prepago").Sum(t => t.MontoPagado)},
-            {"TotalTanqueLleno", Transacciones.Where(t => t.TipoAbastecimiento == "Tanque Lleno").Sum(t => t.MontoPagado)},
-            {"BombaMasUtilizada", Transacciones.GroupBy(t => t.IdBomba).OrderByDescending(g => g.Count()).FirstOrDefault()?.Key},
-            {"BombaMenosUtilizada", Transacciones.GroupBy(t => t.IdBomba).OrderBy(g => g.Count()).FirstOrDefault()?.Key}
+            {"Total Transacciones", Transacciones.Count},
+            {"Total Litros Abastecidos", Transacciones.Sum(t => t.Cantidad)},
+            {"Total Ingresos", Transacciones.Sum(t => t.MontoPagado)},
+            {"Total Prepago", Transacciones.Where(t => t.TipoAbastecimiento == "Prepago").Sum(t => t.MontoPagado)},
+            {"Total TanqueLleno", Transacciones.Where(t => t.TipoAbastecimiento == "Tanque Lleno").Sum(t => t.MontoPagado)},
+            {"Bomba Mas Utilizada", Transacciones.GroupBy(t => t.IdBomba).OrderByDescending(g => g.Count()).FirstOrDefault()?.Key},
+            {"Bomba Menos Utilizada", Transacciones.GroupBy(t => t.IdBomba).OrderBy(g => g.Count()).FirstOrDefault()?.Key}
         };
     }
 
